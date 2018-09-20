@@ -41,13 +41,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Reading passphrase from file
-	file, err := ioutil.ReadFile("passwd")
-	if err != nil {
-		log.Fatal(err)
-	}
-	passphrase := string(file)
-
 	// Send bunch of tnx to an endpoint
 	for t := 0; t < len(tos); t++ {
 		client, err := ethclient.Dial("http://198.13.47.125:8545")
@@ -91,7 +84,7 @@ func main() {
 						return
 					}
 					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
-					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, passphrase, newTx, networkID)
+					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, "i3nxx1rk", newTx, networkID)
 					if err != nil {
 						fmt.Println(err.Error())
 						return
