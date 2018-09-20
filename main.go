@@ -59,7 +59,7 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("NetworkID: ", networkID)
-		ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+		ks := keystore.NewKeyStore("./keystore/from", keystore.StandardScryptN, keystore.StandardScryptP)
 		to := tos[t]
 		value := big.NewInt(10000000)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
