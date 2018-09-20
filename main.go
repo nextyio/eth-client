@@ -19,7 +19,7 @@ import (
 
 func main() {
 	// Some pre-fund accounts
-	from := [3]common.Address{
+	tos := [3]common.Address{
 		common.HexToAddress("a3399f17f5ade94ff61c4c4adae586711cc4b043"),
 		common.HexToAddress("5b154d28aeffb63602a326f140b8757246171546"),
 		common.HexToAddress("2ccb075ade031ba82c48e6885da8577d57f3abc9"),
@@ -30,9 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tos := make([]common.Address, len(files))
+	froms := make([]common.Address, len(files))
 	for i, f := range files {
-		tos[i] = common.HexToAddress(f.Name()[37:])
+		froms[i] = common.HexToAddress(f.Name()[37:])
 	}
 
 	// Reading data from file
@@ -52,17 +52,17 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("NetworkID: ", networkID)
-		ks := keystore.NewKeyStore("./from", keystore.StandardScryptN, keystore.StandardScryptP)
+		ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
 		to := tos[t]
-		value := big.NewInt(10000000)
+		value := big.NewInt(10000)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 		var wg sync.WaitGroup
-		wg.Add(len(from))
-		for k := 0; k < len(from); k++ {
+		wg.Add(len(froms))
+		for k := 0; k < len(froms); k++ {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
@@ -96,7 +96,7 @@ func main() {
 					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
 					nonce++
 				}
-			}(from[k])
+			}(froms[k])
 		}
 		wg.Wait()
 		fmt.Println("Done!!!... " + strconv.Itoa(t))
