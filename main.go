@@ -24,6 +24,7 @@ func main() {
 		common.HexToAddress("5b154d28aeffb63602a326f140b8757246171546"),
 		common.HexToAddress("2ccb075ade031ba82c48e6885da8577d57f3abc9"),
 	}
+
 	// Getting account address from `keystore` folder
 	files, err := ioutil.ReadDir("./keystore")
 	if err != nil {
@@ -33,10 +34,21 @@ func main() {
 	for i, f := range files {
 		tos[i] = common.HexToAddress(f.Name()[37:])
 	}
+
+	// Reading data from file
 	data, err := ioutil.ReadFile("./data")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Reading passphrase from file
+	file, err := ioutil.ReadFile("passwd")
+	if err != nil {
+		log.Fatal(err)
+	}
+	passphrase := string(file)
+
+	// Send bunch of tnx to an endpoint
 	for t := 0; t < len(tos); t++ {
 		client, err := ethclient.Dial("http://198.13.47.125:8545")
 		if err != nil {
@@ -79,7 +91,7 @@ func main() {
 						return
 					}
 					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
-					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, "i3nxx1rk", newTx, networkID)
+					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, passphrase, newTx, networkID)
 					if err != nil {
 						fmt.Println(err.Error())
 						return
