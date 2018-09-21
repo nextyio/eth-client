@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"strconv"
 	"sync"
+	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -41,6 +42,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Unlock all the account before sending txs
+	ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	for k := 0; k < len(froms); k++ {
+		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "i3nxx1rk", time.Duration(30)*time.Minute)
+	}
+
 	// Send bunch of tnx to an endpoint
 	for t := 0; t < len(tos); t++ {
 		client, err := ethclient.Dial("http://198.13.47.125:8545")
@@ -52,9 +59,8 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("NetworkID: ", networkID)
-		ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
 		to := tos[t]
-		value := big.NewInt(10000)
+		value := big.NewInt(1)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			fmt.Println(err.Error())
@@ -66,7 +72,7 @@ func main() {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 1; i++ {
+				for i := 0; i < 1000; i++ {
 					msg := ethereum.CallMsg{
 						From:     _from,
 						To:       &to,
@@ -79,20 +85,13 @@ func main() {
 						fmt.Println(err.Error())
 						return
 					}
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
 					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
-					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, "i3nxx1rk", newTx, networkID)
+					signedTx, err := ks.SignTx(accounts.Account{Address: _from}, newTx, networkID)
 					if err != nil {
 						fmt.Println(err.Error())
 						return
 					}
-					if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-						fmt.Println(err.Error())
-						return
-					}
+					go client.SendTransaction(context.Background(), signedTx)
 					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
 					nonce++
 				}
