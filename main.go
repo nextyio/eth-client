@@ -48,17 +48,19 @@ func main() {
 		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "i3nxx1rk", time.Duration(30)*time.Minute)
 	}
 
+	// Create an eth client
+	client, err := ethclient.Dial("http://198.13.47.125:8545")
+	if err != nil {
+		log.Fatal(err)
+	}
+	networkID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("NetworkID: ", networkID)
+
 	// Send bunch of tnx to an endpoint
 	for t := 0; t < len(tos); t++ {
-		client, err := ethclient.Dial("http://198.13.47.125:8545")
-		if err != nil {
-			log.Fatal(err)
-		}
-		networkID, err := client.NetworkID(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("NetworkID: ", networkID)
 		to := tos[t]
 		value := big.NewInt(1)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
