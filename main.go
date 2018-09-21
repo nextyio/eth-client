@@ -18,6 +18,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+// MaxRequest maximum request
+const MaxRequest = 100
+
 func main() {
 	// Some pre-fund accounts
 	tos := [3]common.Address{
@@ -31,8 +34,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	froms := make([]common.Address, len(files))
+	workers := len(files)
+	if workers > MaxRequest {
+		workers = MaxRequest
+	}
+	froms := make([]common.Address, workers)
 	for i, f := range files {
+		if i >= workers {
+			break
+		}
 		froms[i] = common.HexToAddress(f.Name()[37:])
 	}
 
@@ -69,8 +79,8 @@ func main() {
 			return
 		}
 		var wg sync.WaitGroup
-		wg.Add(len(froms))
-		for k := 0; k < len(froms); k++ {
+		wg.Add(workers)
+		for k := 0; k < workers; k++ {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
