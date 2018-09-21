@@ -7,8 +7,6 @@ import (
 	"log"
 	"math/big"
 	"strconv"
-	"sync"
-	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -18,45 +16,25 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-// MaxRequest maximum request
-const MaxRequest = 100
-
 func main() {
-	// Some pre-fund accounts
-	tos := [3]common.Address{
-		common.HexToAddress("a3399f17f5ade94ff61c4c4adae586711cc4b043"),
-		common.HexToAddress("5b154d28aeffb63602a326f140b8757246171546"),
-		common.HexToAddress("2ccb075ade031ba82c48e6885da8577d57f3abc9"),
-	}
+	// pre-fund account
+	from := common.HexToAddress("a3399f17f5ade94ff61c4c4adae586711cc4b043")
 
 	// Getting account address from `keystore` folder
 	files, err := ioutil.ReadDir("./keystore")
 	if err != nil {
 		log.Fatal(err)
 	}
-	workers := len(files)
-	if workers > MaxRequest {
-		workers = MaxRequest
-	}
-	froms := make([]common.Address, workers)
+
+	tos := make([]common.Address, len(files))
 	for i, f := range files {
-		if i >= workers {
-			break
-		}
-		froms[i] = common.HexToAddress(f.Name()[37:])
+		tos[i] = common.HexToAddress(f.Name()[37:])
 	}
+	data := []byte("nexty testnet funding")
 
-	// Reading data from file
-	data, err := ioutil.ReadFile("./data")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Unlock all the account before sending txs
-	ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
-	for k := 0; k < len(froms); k++ {
-		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "i3nxx1rk", time.Duration(30)*time.Minute)
-	}
+	// Unlock the account before sending txs
+	ks := keystore.NewKeyStore("./from", keystore.StandardScryptN, keystore.StandardScryptP)
+	ks.Unlock(accounts.Account{Address: from}, "i3nxx1rk")
 
 	// Create an eth client
 	client, err := ethclient.Dial("http://198.13.47.125:8545")
@@ -69,47 +47,39 @@ func main() {
 	}
 	fmt.Println("NetworkID: ", networkID)
 
-	// Send bunch of tnx to an endpoint
-	for t := 0; t < len(tos); t++ {
-		to := tos[t]
-		value := big.NewInt(1)
+	// Fund to the accounts
+	nonce, _ := client.PendingNonceAt(context.Background(), from)
+	for i := 0; i < len(tos); i++ {
+		to := tos[i]
+		value := big.NewInt(100000)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		var wg sync.WaitGroup
-		wg.Add(workers)
-		for k := 0; k < workers; k++ {
-			go func(_from common.Address) {
-				defer wg.Done()
-				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 1000; i++ {
-					msg := ethereum.CallMsg{
-						From:     _from,
-						To:       &to,
-						GasPrice: gasPrice,
-						Value:    value,
-						Data:     data,
-					}
-					gasLimit, err := client.EstimateGas(context.Background(), msg)
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
-					signedTx, err := ks.SignTx(accounts.Account{Address: _from}, newTx, networkID)
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					go client.SendTransaction(context.Background(), signedTx)
-					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
-					nonce++
-				}
-			}(froms[k])
+		msg := ethereum.CallMsg{
+			From:     from,
+			To:       &to,
+			GasPrice: gasPrice,
+			Value:    value,
+			Data:     data,
 		}
-		wg.Wait()
-		fmt.Println("Done!!!... " + strconv.Itoa(t))
+		gasLimit, err := client.EstimateGas(context.Background(), msg)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
+		signedTx, err := ks.SignTx(accounts.Account{Address: from}, newTx, networkID)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		if err := client.SendTransaction(context.Background(), signedTx); err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		nonce++
+		fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
 	}
 }
