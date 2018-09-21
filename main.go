@@ -6,8 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
-	"strconv"
-	"sync"
+	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -41,8 +40,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Send bunch of tnx to an endpoint
-	for t := 0; t < len(tos); t++ {
+	ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	to := tos[0]
+	value := big.NewInt(10000)
+	for k := 0; k < len(froms); k++ {
+		start := time.Now()
 		client, err := ethclient.Dial("http://198.13.47.125:8545")
 		if err != nil {
 			log.Fatal(err)
@@ -52,53 +54,44 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("NetworkID: ", networkID)
-		ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
-		to := tos[t]
-		value := big.NewInt(10000)
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
-		var wg sync.WaitGroup
-		wg.Add(len(froms))
-		for k := 0; k < len(froms); k++ {
-			go func(_from common.Address) {
-				defer wg.Done()
-				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 1; i++ {
-					msg := ethereum.CallMsg{
-						From:     _from,
-						To:       &to,
-						GasPrice: gasPrice,
-						Value:    value,
-						Data:     data,
-					}
-					gasLimit, err := client.EstimateGas(context.Background(), msg)
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
-					signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: _from}, "i3nxx1rk", newTx, networkID)
-					if err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-						fmt.Println(err.Error())
-						return
-					}
-					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
-					nonce++
-				}
-			}(froms[k])
+		nonce, _ := client.PendingNonceAt(context.Background(), froms[k])
+		elapsed := time.Since(start)
+		fmt.Println("PendingNonceAt took " + elapsed.String())
+		msg := ethereum.CallMsg{
+			From:     froms[k],
+			To:       &to,
+			GasPrice: gasPrice,
+			Value:    value,
+			Data:     data,
 		}
-		wg.Wait()
-		fmt.Println("Done!!!... " + strconv.Itoa(t))
+		gasLimit, err := client.EstimateGas(context.Background(), msg)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		elapsed = time.Since(start)
+		fmt.Println("EstimateGas took " + elapsed.String())
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
+		elapsed = time.Since(start)
+		fmt.Println("NewTransaction took " + elapsed.String())
+		signedTx, err := ks.SignTxWithPassphrase(accounts.Account{Address: froms[k]}, "i3nxx1rk", newTx, networkID)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		elapsed = time.Since(start)
+		fmt.Println("SignTxWithPassphrase took " + elapsed.String())
+		go client.SendTransaction(context.Background(), signedTx)
+		elapsed = time.Since(start)
+		fmt.Println("SendTransaction took " + elapsed.String())
 	}
 }
