@@ -23,14 +23,12 @@ const MaxRequest = 100
 
 func main() {
 	// Some pre-fund accounts
-	tos := [3]common.Address{
-		common.HexToAddress("a3399f17f5ade94ff61c4c4adae586711cc4b043"),
-		common.HexToAddress("5b154d28aeffb63602a326f140b8757246171546"),
-		common.HexToAddress("2ccb075ade031ba82c48e6885da8577d57f3abc9"),
+	tos := [1]common.Address{
+		common.HexToAddress("0e47Dcb26e0C3E8b7f363B738aE81aAe9FcE0004"),
 	}
 
 	// Getting account address from `keystore` folder
-	files, err := ioutil.ReadDir("./keystore")
+	files, err := ioutil.ReadDir("/home/ubuntu/.ethereum/keystore")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,13 +51,13 @@ func main() {
 	}
 
 	// Unlock all the account before sending txs
-	ks := keystore.NewKeyStore("./keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	ks := keystore.NewKeyStore("/home/ubuntu/.ethereum/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
 	for k := 0; k < len(froms); k++ {
-		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "i3nxx1rk", time.Duration(30)*time.Minute)
+		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "password", time.Duration(30)*time.Minute)
 	}
 
 	// Create an eth client
-	client, err := ethclient.Dial("http://198.13.47.125:8545")
+	client, err := ethclient.Dial("http://127.0.0.1:8545")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,7 +82,7 @@ func main() {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 1000; i++ {
+				for i := 0; i < 10000; i++ {
 					msg := ethereum.CallMsg{
 						From:     _from,
 						To:       &to,
