@@ -1,5 +1,5 @@
 #!/bin/bash
 for i in {1..10}
 do
-   /Users/hadv/work/github/hadv/go-ethereum/build/bin/geth --datadir ./ account new --password ./passwd
+    ~/geth-linux-amd64 account new --password <(echo password)
 done

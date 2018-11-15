@@ -18,10 +18,10 @@ import (
 
 func main() {
 	// pre-fund account
-	from := common.HexToAddress("a3399f17f5ade94ff61c4c4adae586711cc4b043")
+	from := common.HexToAddress("0e47Dcb26e0C3E8b7f363B738aE81aAe9FcE0004")
 
 	// Getting account address from `keystore` folder
-	files, err := ioutil.ReadDir("./keystore")
+	files, err := ioutil.ReadDir("/home/ubuntu/.ethereum/keystore")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,11 +33,11 @@ func main() {
 	data := []byte("nexty testnet funding")
 
 	// Unlock the account before sending txs
-	ks := keystore.NewKeyStore("./from", keystore.StandardScryptN, keystore.StandardScryptP)
-	ks.Unlock(accounts.Account{Address: from}, "i3nxx1rk")
+	ks := keystore.NewKeyStore("/home/ubuntu/.ethereum/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	ks.Unlock(accounts.Account{Address: from}, "password")
 
 	// Create an eth client
-	client, err := ethclient.Dial("http://198.13.47.125:8545")
+	client, err := ethclient.Dial("http://127.0.0.1:8545")
 	if err != nil {
 		log.Fatal(err)
 	}
