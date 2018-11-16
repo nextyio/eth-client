@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Getting account address from `keystore` folder
-	files, err := ioutil.ReadDir("/home/ubuntu/.ethereum/keystore")
+	files, err := ioutil.ReadDir("/root/.ethereum/keystore")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,13 +51,13 @@ func main() {
 	}
 
 	// Unlock all the account before sending txs
-	ks := keystore.NewKeyStore("/home/ubuntu/.ethereum/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	ks := keystore.NewKeyStore("/root/.ethereum/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
 	for k := 0; k < len(froms); k++ {
 		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "password", time.Duration(30)*time.Minute)
 	}
 
 	// Create an eth client
-	client, err := ethclient.Dial("http://127.0.0.1:8545")
+	client, err := ethclient.Dial("http://18.232.84.183:8545")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func main() {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 10000; i++ {
+				for i := 0; i < 100; i++ {
 					msg := ethereum.CallMsg{
 						From:     _from,
 						To:       &to,
