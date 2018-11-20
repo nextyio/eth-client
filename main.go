@@ -101,7 +101,10 @@ func main() {
 						fmt.Println(err.Error())
 						return
 					}
-					go client.SendTransaction(context.Background(), signedTx)
+					if err := client.SendTransaction(context.Background(), signedTx); err != nil {
+						fmt.Println(err.Error())
+						return
+					}
 					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
 					nonce++
 				}
