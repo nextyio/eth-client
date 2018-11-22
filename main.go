@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"strconv"
 	"sync"
-	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -19,7 +18,7 @@ import (
 )
 
 // MaxRequest maximum request
-const MaxRequest = 100
+const MaxRequest = 200
 const maxTxs = 32768
 
 func main() {
@@ -54,7 +53,7 @@ func main() {
 	// Unlock all the account before sending txs
 	ks := keystore.NewKeyStore("/root/.ethereum/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
 	for k := 0; k < len(froms); k++ {
-		ks.TimedUnlock(accounts.Account{Address: froms[k]}, "password", time.Duration(30)*time.Minute)
+		ks.Unlock(accounts.Account{Address: froms[k]}, "password")
 	}
 
 	// Create an eth client
