@@ -20,6 +20,7 @@ import (
 
 // MaxRequest maximum request
 const MaxRequest = 100
+const maxTxs = 32768
 
 func main() {
 	// Some pre-fund accounts
@@ -57,7 +58,7 @@ func main() {
 	}
 
 	// Create an eth client
-	client, err := ethclient.Dial("http://18.232.84.183:8545")
+	client, err := ethclient.Dial("http://35.153.179.90:8545")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,7 +83,7 @@ func main() {
 			go func(_from common.Address) {
 				defer wg.Done()
 				nonce, _ := client.PendingNonceAt(context.Background(), _from)
-				for i := 0; i < 100; i++ {
+				for i := 0; i < maxTxs; i++ {
 					msg := ethereum.CallMsg{
 						From:     _from,
 						To:       &to,
@@ -93,17 +94,17 @@ func main() {
 					gasLimit, err := client.EstimateGas(context.Background(), msg)
 					if err != nil {
 						fmt.Println(err.Error())
-						return
+						continue
 					}
 					newTx := types.NewTransaction(nonce, to, value, gasLimit, gasPrice, data)
 					signedTx, err := ks.SignTx(accounts.Account{Address: _from}, newTx, networkID)
 					if err != nil {
 						fmt.Println(err.Error())
-						return
+						continue
 					}
 					if err := client.SendTransaction(context.Background(), signedTx); err != nil {
 						fmt.Println(err.Error())
-						return
+						continue
 					}
 					fmt.Println("Send tnx succesfully...   " + strconv.Itoa(i))
 					nonce++
